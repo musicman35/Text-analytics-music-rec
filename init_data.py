@@ -19,18 +19,8 @@ def check_database_status():
     if not db_path.exists():
         return False, 0, "Database file not found. Please run data collection."
 
-    try:
-        from src.database.sqlite_manager import SQLiteManager
-        db = SQLiteManager()
-        count = db.get_song_count()
-
-        if count == 0:
-            return False, 0, "Database exists but is empty. Please run data collection."
-
-        return True, count, f"Database ready: {count} songs loaded"
-
-    except Exception as e:
-        return False, 0, f"Database error: {str(e)}"
+    # SQLite is deprecated, using Qdrant-only storage now
+    return False, 0, "SQLite database deprecated. Using Qdrant Cloud storage."
 
 
 def check_qdrant_status():
@@ -47,8 +37,8 @@ def check_qdrant_status():
         return False, "⚠️ Using local Qdrant. For deployment, use Qdrant Cloud."
 
     try:
-        from src.database.qdrant_manager import QdrantManager
-        qm = QdrantManager()
+        from src.database.qdrant_storage import QdrantStorage
+        qm = QdrantStorage()
 
         # Try to get collection info
         collection_name = os.getenv("QDRANT_COLLECTION_NAME", "music_collection")

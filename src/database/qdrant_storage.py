@@ -400,6 +400,84 @@ class QdrantStorage:
             print(f"Error getting interactions: {e}")
             return []
 
+    # ==================== MEMORY MANAGEMENT ====================
+
+    def get_user_memory(self, user_id: str) -> Optional[Dict]:
+        """
+        Get user memory (long-term and short-term)
+        Note: Memory is currently stored in-memory only
+        TODO: Implement Qdrant-based memory storage
+        """
+        return None
+
+    def update_user_memory(self, user_id: str, long_term: Dict = None, short_term: Dict = None):
+        """
+        Update user memory
+        Note: Memory is currently stored in-memory only
+        TODO: Implement Qdrant-based memory storage
+        """
+        pass
+
+    def get_song(self, song_id: str = None, spotify_id: str = None) -> Optional[Dict]:
+        """
+        Get a single song by ID
+
+        Args:
+            song_id: Song ID (same as spotify_id)
+            spotify_id: Spotify track ID
+
+        Returns:
+            Song dictionary or None
+        """
+        # Use either parameter
+        search_id = song_id or spotify_id
+        if not search_id:
+            return None
+
+        try:
+            # Retrieve song from Qdrant
+            result = self.client.retrieve(
+                collection_name=self.songs_collection,
+                ids=[search_id]
+            )
+
+            if result and len(result) > 0:
+                point = result[0]
+                song = point.payload.copy()
+
+                # Reconstruct features from payload
+                song['features'] = {
+                    'danceability': song.get('danceability', 0),
+                    'energy': song.get('energy', 0),
+                    'valence': song.get('valence', 0),
+                    'tempo': song.get('tempo', 0),
+                    'loudness': song.get('loudness', 0),
+                    'speechiness': song.get('speechiness', 0),
+                    'acousticness': song.get('acousticness', 0),
+                    'instrumentalness': song.get('instrumentalness', 0),
+                    'liveness': song.get('liveness', 0),
+                    'key': song.get('key', 0),
+                    'mode': song.get('mode', 1),
+                    'time_signature': song.get('time_signature', 4),
+                }
+
+                return song
+
+            return None
+
+        except Exception as e:
+            print(f"Error getting song: {e}")
+            return None
+
+    def get_song_count(self) -> int:
+        """Get total number of songs in database"""
+        try:
+            result = self.client.count(collection_name=self.songs_collection)
+            return result.count
+        except Exception as e:
+            print(f"Error getting song count: {e}")
+            return 0
+
     # ==================== HELPER METHODS ====================
 
     def _generate_embedding(self, text: str) -> Optional[List[float]]:

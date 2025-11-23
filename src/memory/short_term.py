@@ -6,7 +6,7 @@ Manages current session context and recent interactions
 from typing import List, Dict, Optional
 from datetime import datetime
 import config
-from src.database.sqlite_manager import SQLiteManager
+from src.database.qdrant_storage import QdrantStorage
 
 
 class ShortTermMemory:
@@ -15,7 +15,7 @@ class ShortTermMemory:
     def __init__(self, user_id: int, session_id: str):
         self.user_id = user_id
         self.session_id = session_id
-        self.db = SQLiteManager()
+        self.db = QdrantStorage()
         self.window_size = config.SHORT_TERM_MEMORY_WINDOW
 
         # In-memory storage for current session

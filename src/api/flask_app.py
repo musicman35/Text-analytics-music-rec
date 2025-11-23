@@ -8,7 +8,7 @@ from flask_cors import CORS
 from typing import Dict
 import config
 from src.recommendation_system import get_recommendation_system
-from src.database.sqlite_manager import SQLiteManager
+from src.database.qdrant_storage import QdrantStorage
 from src.evaluation.metrics import get_metrics, get_ab_testing
 
 app = Flask(__name__)
@@ -16,7 +16,7 @@ CORS(app)
 
 # Initialize components
 rec_system = get_recommendation_system()
-db = SQLiteManager()
+db = QdrantStorage()
 metrics = get_metrics()
 ab_testing = get_ab_testing()
 

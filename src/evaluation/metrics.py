@@ -8,14 +8,14 @@ from typing import List, Dict, Set
 from collections import Counter, defaultdict
 from sklearn.metrics import ndcg_score
 import config
-from src.database.sqlite_manager import SQLiteManager
+from src.database.qdrant_storage import QdrantStorage
 
 
 class RecommendationMetrics:
     """Evaluation metrics for recommendation system"""
 
     def __init__(self):
-        self.db = SQLiteManager()
+        self.db = QdrantStorage()
 
     def precision_at_k(self, recommended: List[int], relevant: List[int], k: int) -> float:
         """
@@ -226,7 +226,7 @@ class ABTesting:
     """A/B testing framework for comparing recommendation strategies"""
 
     def __init__(self):
-        self.db = SQLiteManager()
+        self.db = QdrantStorage()
 
     def compare_strategies(self, user_id: int, strategy_a_recs: List[Dict],
                           strategy_b_recs: List[Dict],

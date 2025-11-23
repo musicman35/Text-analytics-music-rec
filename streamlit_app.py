@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent))
 
 from src.recommendation_system import get_recommendation_system
-from src.database.sqlite_manager import SQLiteManager
+from src.database.qdrant_storage import QdrantStorage
 from src.evaluation.metrics import get_metrics
 
 # Page config
@@ -43,7 +43,7 @@ if 'pipeline_trace' not in st.session_state:
 def get_components():
     return {
         'system': get_recommendation_system(),
-        'db': SQLiteManager(),
+        'db': QdrantStorage(),
         'metrics': get_metrics()
     }
 

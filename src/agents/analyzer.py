@@ -8,14 +8,14 @@ from langchain_openai import ChatOpenAI
 import config
 from src.memory.long_term import LongTermMemory, get_long_term_memory
 from src.memory.short_term import ShortTermMemory
-from src.database.sqlite_manager import SQLiteManager
+from src.database.qdrant_storage import QdrantStorage
 
 
 class AnalyzerAgent:
     """Agent that analyzes user behavior and preferences"""
 
     def __init__(self):
-        self.db = SQLiteManager()
+        self.db = QdrantStorage()
 
         # Initialize LLM
         self.llm = ChatOpenAI(
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     print("Testing Analyzer Agent\n" + "="*60)
 
     agent = AnalyzerAgent()
-    db = SQLiteManager()
+    db = QdrantStorage()
 
     # Create test user if doesn't exist
     user = db.get_user(username="test_user")

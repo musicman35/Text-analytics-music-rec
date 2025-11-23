@@ -8,7 +8,7 @@ from datetime import datetime
 import numpy as np
 from collections import Counter, defaultdict
 import config
-from src.database.sqlite_manager import SQLiteManager
+from src.database.qdrant_storage import QdrantStorage
 
 
 class LongTermMemory:
@@ -16,7 +16,7 @@ class LongTermMemory:
 
     def __init__(self, user_id: int):
         self.user_id = user_id
-        self.db = SQLiteManager()
+        self.db = QdrantStorage()
         self.update_threshold = config.LONG_TERM_MEMORY_UPDATE_THRESHOLD
 
         # Profile data

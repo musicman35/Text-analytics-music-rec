@@ -4,19 +4,16 @@ Performs semantic search on Qdrant to retrieve candidate songs
 """
 
 from typing import List, Dict, Optional
-from langchain.agents import AgentExecutor, create_openai_functions_agent
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.tools import Tool
 import config
-from src.database.qdrant_manager import QdrantManager
+from src.database.qdrant_storage import QdrantStorage
 
 
 class RetrieverAgent:
     """Agent that retrieves relevant songs from vector database"""
 
     def __init__(self):
-        self.qdrant = QdrantManager()
+        self.qdrant = QdrantStorage()
         self.candidate_count = config.RETRIEVAL_CANDIDATE_COUNT
 
         # Initialize LLM
@@ -42,7 +39,7 @@ class RetrieverAgent:
             print(f"[RetrieverAgent] Genre filter: {genre_filter}")
 
         # Perform semantic search in Qdrant
-        candidates = self.qdrant.search(
+        candidates = self.qdrant.search_songs(
             query=query,
             limit=self.candidate_count,
             genre_filter=genre_filter

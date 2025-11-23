@@ -12,7 +12,7 @@ from src.agents.curator import CuratorAgent
 from src.agents.critic import CriticAgent
 from src.memory.short_term import get_short_term_memory, ShortTermMemory
 from src.memory.long_term import get_long_term_memory
-from src.database.sqlite_manager import SQLiteManager
+from src.database.qdrant_storage import QdrantStorage
 
 
 class MusicRecommendationSystem:
@@ -26,7 +26,7 @@ class MusicRecommendationSystem:
         self.critic = CriticAgent()
 
         # Initialize database
-        self.db = SQLiteManager()
+        self.db = QdrantStorage()
 
     def get_recommendations(self, user_id: int, query: str,
                            session_id: str = None,
