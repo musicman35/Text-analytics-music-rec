@@ -137,11 +137,13 @@ with st.sidebar:
         st.divider()
         st.subheader("Your Stats")
 
-        interactions = db.get_user_interactions(st.session_state.user_id)
+        # Get accurate interaction count
+        interaction_count = db.get_user_interaction_count(st.session_state.user_id)
         profile = rec_system.get_user_profile(st.session_state.user_id)
 
         # Show actual interaction count from database
-        st.metric("Total Interactions", len(interactions))
+        st.metric("Total Interactions", interaction_count)
+        st.caption("💡 Interactions include: ratings, likes, dislikes, and plays")
 
         if profile.get('genre_preferences'):
             st.write("**Top Genres:**")
@@ -226,14 +228,17 @@ with tab1:
     if st.session_state.recommendations:
         st.divider()
         st.subheader("Your Recommendations")
+        st.caption("💡 Click on a song to expand and play preview")
 
         for i, song in enumerate(st.session_state.recommendations, 1):
-            with st.container():
-                col1, col2, col3 = st.columns([3, 1, 1])
+            # Create expander title with song info
+            expander_title = f"{i}. {song['name']} - {song['artist']}"
+
+            # Only expand first song by default
+            with st.expander(expander_title, expanded=(i == 1)):
+                col1, col2 = st.columns([3, 1])
 
                 with col1:
-                    st.markdown(f"### {i}. {song['name']}")
-                    st.write(f"**Artist:** {song['artist']}")
                     st.write(f"**Genre:** {song.get('genre', 'Unknown').capitalize()}")
 
                     # Features - check both features dict and individual fields
@@ -248,7 +253,7 @@ with tab1:
                         feature_text += f"Danceability: {danceability:.2f}"
                         st.caption(feature_text)
 
-                    # Spotify Preview Player
+                    # Spotify Preview Player - only loads when expander is opened
                     spotify_id = song.get('spotify_id')
                     if spotify_id:
                         st.components.v1.html(
@@ -288,32 +293,30 @@ with tab1:
                             session_id=st.session_state.session_id
                         )
                         st.session_state.rated_songs.add(song_key)
-                        st.success("Rated!")
-                        st.rerun()
+                        st.success("✓ Rated!")
 
-                with col3:
                     # Actions
-                    if st.button("👍", key=f"like_{i}_{get_song_id(song)}"):
-                        rec_system.record_feedback(
-                            st.session_state.user_id,
-                            get_song_id(song),
-                            action_type='like',
-                            session_id=st.session_state.session_id
-                        )
-                        st.success("Liked!")
-                        st.rerun()
+                    col_like, col_dislike = st.columns(2)
 
-                    if st.button("👎", key=f"dislike_{i}_{get_song_id(song)}"):
-                        rec_system.record_feedback(
-                            st.session_state.user_id,
-                            get_song_id(song),
-                            action_type='dislike',
-                            session_id=st.session_state.session_id
-                        )
-                        st.info("Noted!")
-                        st.rerun()
+                    with col_like:
+                        if st.button("👍", key=f"like_{i}_{get_song_id(song)}", use_container_width=True):
+                            rec_system.record_feedback(
+                                st.session_state.user_id,
+                                get_song_id(song),
+                                action_type='like',
+                                session_id=st.session_state.session_id
+                            )
+                            st.success("✓")
 
-                st.divider()
+                    with col_dislike:
+                        if st.button("👎", key=f"dislike_{i}_{get_song_id(song)}", use_container_width=True):
+                            rec_system.record_feedback(
+                                st.session_state.user_id,
+                                get_song_id(song),
+                                action_type='dislike',
+                                session_id=st.session_state.session_id
+                            )
+                            st.info("✓")
 
 # Tab 2: User Profile
 with tab2:

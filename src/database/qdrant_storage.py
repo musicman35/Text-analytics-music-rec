@@ -471,6 +471,26 @@ class QdrantStorage:
             print(f"Error getting interactions: {e}")
             return []
 
+    def get_user_interaction_count(self, user_id: str) -> int:
+        """Get total count of interactions for a user without retrieving all data"""
+        try:
+            result = self.client.count(
+                collection_name=self.interactions_collection,
+                count_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="user_id",
+                            match=MatchValue(value=user_id)
+                        )
+                    ]
+                )
+            )
+            return result.count
+
+        except Exception as e:
+            print(f"Error counting interactions: {e}")
+            return 0
+
     def save_recommendation(self, session_id: str, user_id: str,
                            recommended_songs: List[str], agent_reasoning: Dict):
         """
