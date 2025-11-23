@@ -130,7 +130,21 @@ class LongTermMemory:
         feature_values = defaultdict(list)
 
         for song in liked_songs:
-            features = song.get('features', {})
+            # Fetch full song data to get audio features
+            song_data = self.db.get_song(song_id=song['song_id'])
+            if not song_data:
+                continue
+
+            # Try to get features from nested dict first, then individual fields
+            features = song_data.get('features', {})
+            if not features:
+                # Reconstruct from individual fields
+                features = {
+                    feature_name: song_data.get(feature_name)
+                    for feature_name in config.AUDIO_FEATURES
+                    if song_data.get(feature_name) is not None
+                }
+
             for feature_name in config.AUDIO_FEATURES:
                 if feature_name in features:
                     feature_values[feature_name].append(features[feature_name])
@@ -150,8 +164,19 @@ class LongTermMemory:
 
     def _update_artist_preferences(self, liked_songs: List[Dict], disliked_songs: List[Dict]):
         """Update liked and disliked artists"""
-        liked_artists = [song['artist'] for song in liked_songs]
-        disliked_artists = [song['artist'] for song in disliked_songs]
+        liked_artists = []
+        disliked_artists = []
+
+        # Fetch full song data to get artist information
+        for song in liked_songs:
+            song_data = self.db.get_song(song_id=song['song_id'])
+            if song_data and song_data.get('artist'):
+                liked_artists.append(song_data['artist'])
+
+        for song in disliked_songs:
+            song_data = self.db.get_song(song_id=song['song_id'])
+            if song_data and song_data.get('artist'):
+                disliked_artists.append(song_data['artist'])
 
         # Count occurrences
         liked_counter = Counter(liked_artists)
@@ -184,7 +209,23 @@ class LongTermMemory:
                     hour = timestamp.hour
                     period = matcher.get_time_period(hour)
 
-                    features = song.get('features', {})
+                    # Fetch full song data to get audio features
+                    song_data = self.db.get_song(song_id=song['song_id'])
+                    if not song_data:
+                        continue
+
+                    # Try to get features from nested dict first, then individual fields
+                    features = song_data.get('features', {})
+                    if not features:
+                        # Reconstruct from individual fields
+                        features = {
+                            'energy': song_data.get('energy'),
+                            'valence': song_data.get('valence'),
+                            'danceability': song_data.get('danceability')
+                        }
+                        # Only add if we have at least some features
+                        features = {k: v for k, v in features.items() if v is not None}
+
                     if features:
                         time_patterns[period].append(features)
                 except:
