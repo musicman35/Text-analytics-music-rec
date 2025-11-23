@@ -408,9 +408,21 @@ class QdrantStorage:
 
     # ==================== INTERACTION OPERATIONS ====================
 
-    def add_interaction(self, user_id: str, song_id: str, interaction_type: str):
+    def add_interaction(self, user_id: str, song_id: str, interaction_type: str, rating: int = None):
         """Add user-song interaction"""
         interaction_id = str(uuid.uuid4())
+
+        payload = {
+            'interaction_id': interaction_id,
+            'user_id': user_id,
+            'song_id': song_id,
+            'interaction_type': interaction_type,  # 'like', 'dislike', 'play', 'rate'
+            'timestamp': str(uuid.uuid1().time)
+        }
+
+        # Add rating if provided
+        if rating is not None:
+            payload['rating'] = rating
 
         self.client.upsert(
             collection_name=self.interactions_collection,
@@ -418,13 +430,7 @@ class QdrantStorage:
                 PointStruct(
                     id=interaction_id,
                     vector=[0.0] * 128,  # Dummy vector
-                    payload={
-                        'interaction_id': interaction_id,
-                        'user_id': user_id,
-                        'song_id': song_id,
-                        'interaction_type': interaction_type,  # 'like', 'dislike', 'play'
-                        'timestamp': str(uuid.uuid1().time)
-                    }
+                    payload=payload
                 )
             ]
         )
