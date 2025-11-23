@@ -7,16 +7,12 @@ langchain-anthropic
 # Vector Database (use latest version)
 qdrant-client
 
-# Database
-sqlalchemy
-
 # Data Processing
 pandas
 numpy
 datasets
 
 # API Clients
-spotipy
 lyricsgenius
 cohere
 openai

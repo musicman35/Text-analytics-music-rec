@@ -9,14 +9,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 CACHE_DIR = DATA_DIR / "cache"
-DB_PATH = DATA_DIR / "music.db"
 
 # API Keys (Set these in environment variables or .env file)
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "your_spotify_client_id")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "your_spotify_client_secret")
-SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8888/callback")
-
-GENIUS_API_KEY = os.getenv("GENIUS_API_KEY", "your_genius_api_key")
+GENIUS_API_KEY = os.getenv("GENIUS_API_KEY", "your_genius_api_key")  # For data collection only
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your_openai_api_key")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "your_anthropic_api_key")
