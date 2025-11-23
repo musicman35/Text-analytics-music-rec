@@ -277,6 +277,23 @@ class QdrantStorage:
                         song = result.payload.copy()
                         if hasattr(result, 'score'):
                             song['score'] = result.score
+
+                        # Reconstruct features dict for compatibility
+                        song['features'] = {
+                            'danceability': song.get('danceability', 0),
+                            'energy': song.get('energy', 0),
+                            'valence': song.get('valence', 0),
+                            'tempo': song.get('tempo', 0),
+                            'loudness': song.get('loudness', 0),
+                            'speechiness': song.get('speechiness', 0),
+                            'acousticness': song.get('acousticness', 0),
+                            'instrumentalness': song.get('instrumentalness', 0),
+                            'liveness': song.get('liveness', 0),
+                            'key': song.get('key', 0),
+                            'mode': song.get('mode', 1),
+                            'time_signature': song.get('time_signature', 4),
+                        }
+
                         songs.append(song)
 
             return songs

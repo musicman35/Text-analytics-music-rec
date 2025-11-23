@@ -75,8 +75,7 @@ class CriticAgent:
         scores.append(artist_diversity)
 
         # Audio feature diversity (energy variance)
-        energies = [song['features'].get('energy', 0.5) for song in recommendations
-                   if 'features' in song]
+        energies = [song.get('energy', 0.5) for song in recommendations]
         if energies:
             energy_std = np.std(energies)
             # Normalize: std of 0.2 or more is considered diverse
@@ -147,8 +146,7 @@ class CriticAgent:
             })
 
         # Check for similarity (too many similar energy levels)
-        energies = [song['features'].get('energy', 0.5) for song in recommendations
-                   if 'features' in song]
+        energies = [song.get('energy', 0.5) for song in recommendations]
         if energies:
             energy_std = np.std(energies)
             if energy_std < 0.1:
@@ -201,10 +199,10 @@ class CriticAgent:
                     )
 
             # Audio features
-            features = song.get('features', {})
-            if features:
-                energy = features.get('energy', 0.5)
-                valence = features.get('valence', 0.5)
+            energy = song.get('energy', 0.5)
+            valence = song.get('valence', 0.5)
+
+            if energy is not None or valence is not None:
 
                 if energy > 0.7:
                     explanation['reasons'].append("High-energy track")
@@ -281,16 +279,15 @@ class CriticAgent:
 
         # Genre and mood
         genre = song.get('genre', 'Unknown')
-        features = song.get('features', {})
 
         mood_desc = []
-        if features.get('energy', 0.5) > 0.7:
+        if song.get('energy', 0.5) > 0.7:
             mood_desc.append("energetic")
-        if features.get('valence', 0.5) > 0.7:
+        if song.get('valence', 0.5) > 0.7:
             mood_desc.append("uplifting")
-        elif features.get('valence', 0.5) < 0.3:
+        elif song.get('valence', 0.5) < 0.3:
             mood_desc.append("melancholic")
-        if features.get('danceability', 0.5) > 0.7:
+        if song.get('danceability', 0.5) > 0.7:
             mood_desc.append("danceable")
 
         desc = f"{genre.capitalize()}"

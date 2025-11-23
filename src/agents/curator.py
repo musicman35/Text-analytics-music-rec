@@ -13,6 +13,21 @@ from src.reranker.cohere_reranker import CohereReranker
 from src.memory.long_term import get_long_term_memory
 
 
+def extract_audio_features(song: Dict) -> Dict:
+    """Extract audio features from song into a features dict"""
+    return {
+        'danceability': song.get('danceability', 0.5),
+        'energy': song.get('energy', 0.5),
+        'valence': song.get('valence', 0.5),
+        'tempo': song.get('tempo', 120.0),
+        'loudness': song.get('loudness', -10.0),
+        'speechiness': song.get('speechiness', 0.05),
+        'acousticness': song.get('acousticness', 0.5),
+        'instrumentalness': song.get('instrumentalness', 0.0),
+        'liveness': song.get('liveness', 0.1)
+    }
+
+
 class CuratorAgent:
     """Agent that curates and ranks recommendations"""
 
@@ -127,8 +142,10 @@ class CuratorAgent:
             semantic_score = song.get('score', 0.5)
 
             # User profile match score
+            # Extract audio features from song
+            features = extract_audio_features(song)
             profile_score = long_term.calculate_song_match_score(
-                song['features'],
+                features,
                 song.get('genre'),
                 song.get('artist')
             )
