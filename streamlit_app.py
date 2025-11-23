@@ -41,6 +41,8 @@ if 'recommendations' not in st.session_state:
     st.session_state.recommendations = None
 if 'pipeline_trace' not in st.session_state:
     st.session_state.pipeline_trace = None
+if 'rated_songs' not in st.session_state:
+    st.session_state.rated_songs = set()  # Track songs that have been rated to prevent duplicate recordings
 
 # Initialize components
 @st.cache_resource
@@ -210,6 +212,8 @@ with tab1:
                 if result['success']:
                     st.session_state.recommendations = result['recommendations']
                     st.session_state.pipeline_trace = result['pipeline_trace']
+                    # Clear rated songs set for new recommendations
+                    st.session_state.rated_songs = set()
                     st.success(f"Found {len(result['recommendations'])} recommendations!")
 
                 else:
@@ -246,6 +250,7 @@ with tab1:
 
                 with col2:
                     # Rating
+                    song_key = f"{get_song_id(song)}_rate"
                     rating = st.selectbox(
                         "Rate",
                         options=[None, 1, 2, 3, 4, 5],
@@ -253,7 +258,8 @@ with tab1:
                         key=f"rating_{i}_{get_song_id(song)}"
                     )
 
-                    if rating:
+                    # Only record if rating is selected and hasn't been recorded yet
+                    if rating and song_key not in st.session_state.rated_songs:
                         rec_system.record_feedback(
                             user_id=st.session_state.user_id,
                             song_id=get_song_id(song),
@@ -261,6 +267,7 @@ with tab1:
                             action_type='rate',
                             session_id=st.session_state.session_id
                         )
+                        st.session_state.rated_songs.add(song_key)
                         st.success("Rated!")
                         st.rerun()
 
