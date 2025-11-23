@@ -348,9 +348,11 @@ with tab2:
         interactions = db.get_user_interactions(st.session_state.user_id, limit=10)
         if interactions:
             for interaction in interactions:
-                action = interaction['action_type']
+                # Handle both 'action_type' and 'interaction_type' field names
+                action = interaction.get('action_type', interaction.get('interaction_type', 'unknown'))
                 rating = interaction.get('rating', '')
-                st.write(f"- {interaction['song_name']} ({action}{f' - {rating}⭐' if rating else ''})")
+                song_name = interaction.get('song_name', 'Unknown Song')
+                st.write(f"- {song_name} ({action}{f' - {rating}⭐' if rating else ''})")
         else:
             st.info("No activity yet")
 
