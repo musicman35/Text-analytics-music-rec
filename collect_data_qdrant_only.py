@@ -1,7 +1,7 @@
 """
 Qdrant-Only Data Collection
 Collects and stores ALL data in Qdrant Cloud
-Perfect for Streamlit deployment - no SQLite needed!
+No lyrics functionality - uses audio features only
 """
 
 import argparse
@@ -12,34 +12,31 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from src.data_collection.huggingface_collector import HuggingFaceCollector
-from src.data_collection.smart_lyrics_collector import SmartLyricsCollector
 from src.database.qdrant_storage import QdrantStorage
 
 
-def collect_genre_with_lyrics(
+def collect_genre(
     hf_collector: HuggingFaceCollector,
-    lyrics_collector: SmartLyricsCollector,
     genre: str,
     target_count: int,
-    min_lyric_words: int = 50,
     max_attempts: int = 5
 ) -> list:
-    """Collect exactly target_count songs with lyrics for a single genre"""
+    """Collect songs for a single genre using audio features only"""
     print(f"\n{'='*60}")
     print(f"Collecting {target_count} songs for: {genre.upper()}")
     print(f"{'='*60}")
 
-    songs_with_lyrics = []
+    collected_songs = []
 
     for attempt in range(1, max_attempts + 1):
-        needed = target_count - len(songs_with_lyrics)
+        needed = target_count - len(collected_songs)
 
         if needed <= 0:
-            print(f"✓ Target reached: {len(songs_with_lyrics)}/{target_count} songs")
+            print(f"✓ Target reached: {len(collected_songs)}/{target_count} songs")
             break
 
-        oversample_factor = 1.5 + (attempt * 0.3)
-        fetch_count = int(needed * oversample_factor)
+        # Fetch more songs to account for duplicates
+        fetch_count = int(needed * 1.2)
 
         print(f"\nAttempt {attempt}/{max_attempts}: Need {needed} more songs, fetching {fetch_count}...")
 
@@ -53,65 +50,52 @@ def collect_genre_with_lyrics(
             print(f"⚠️  No songs available for {genre}")
             break
 
-        # Fetch lyrics
-        with_lyrics, _ = lyrics_collector.collect_lyrics_for_songs(
-            songs=hf_songs,
-            min_words=min_lyric_words,
-            rate_limit_delay=0.5
-        )
-
-        songs_with_lyrics.extend(with_lyrics)
-
-        success_rate = len(with_lyrics) / len(hf_songs) * 100 if hf_songs else 0
-        print(f"  Got {len(with_lyrics)}/{len(hf_songs)} with lyrics ({success_rate:.1f}% success)")
-        print(f"  Progress: {len(songs_with_lyrics)}/{target_count} songs")
+        # Add songs (no lyrics processing needed)
+        collected_songs.extend(hf_songs)
+        print(f"  Got {len(hf_songs)} songs from dataset")
+        print(f"  Progress: {len(collected_songs)}/{target_count} songs")
 
     # Sample down if needed
-    if len(songs_with_lyrics) > target_count:
+    if len(collected_songs) > target_count:
         import random
-        songs_with_lyrics = random.sample(songs_with_lyrics, target_count)
+        collected_songs = random.sample(collected_songs, target_count)
         print(f"✓ Sampled down to {target_count} songs")
 
-    if len(songs_with_lyrics) < target_count:
-        print(f"⚠️  Only collected {len(songs_with_lyrics)}/{target_count} songs")
+    if len(collected_songs) < target_count:
+        print(f"⚠️  Only collected {len(collected_songs)}/{target_count} songs")
     else:
-        print(f"✓ Successfully collected {len(songs_with_lyrics)}/{target_count} songs")
+        print(f"✓ Successfully collected {len(collected_songs)}/{target_count} songs")
 
-    return songs_with_lyrics
+    return collected_songs
 
 
 def collect_to_qdrant(
     genres: list,
-    songs_per_genre: int = 1000,
-    min_lyric_words: int = 50
+    songs_per_genre: int = 100
 ):
     """
-    Collect balanced dataset and store ONLY in Qdrant Cloud
-
-    No SQLite, no local files - perfect for deployment!
+    Collect dataset and store ONLY in Qdrant Cloud
+    Uses audio features only - no lyrics
     """
     print("="*60)
-    print("QDRANT-ONLY DATA COLLECTION")
+    print("QDRANT-ONLY DATA COLLECTION (NO LYRICS)")
     print("="*60)
 
     print(f"\nTarget: {songs_per_genre} songs per genre")
     print(f"Genres: {', '.join(genres)}")
-    print(f"Storage: Qdrant Cloud ONLY (no local database)")
+    print(f"Storage: Qdrant Cloud (audio features only)")
 
     # Initialize collectors
     hf_collector = HuggingFaceCollector()
-    lyrics_collector = SmartLyricsCollector()
 
     # Collect per-genre
     all_songs = []
 
     for genre in genres:
-        genre_songs = collect_genre_with_lyrics(
+        genre_songs = collect_genre(
             hf_collector=hf_collector,
-            lyrics_collector=lyrics_collector,
             genre=genre,
             target_count=songs_per_genre,
-            min_lyric_words=min_lyric_words,
             max_attempts=5
         )
 
@@ -145,8 +129,8 @@ def collect_to_qdrant(
 
     print(f"\n✓ Total songs: {len(all_songs)}")
     print(f"✓ All data stored in Qdrant Cloud")
-    print(f"✓ No local database files")
-    print(f"✓ Ready for Streamlit deployment!")
+    print(f"✓ Using audio features only (no lyrics)")
+    print(f"✓ Ready for deployment!")
 
     print("\nDistribution by Genre:")
     for genre in genres:
@@ -156,19 +140,19 @@ def collect_to_qdrant(
     print("\n" + "="*60)
     print("DEPLOYMENT READY")
     print("="*60)
-    print("\nYour app can now be deployed to Streamlit Cloud:")
+    print("\nYour app can now be deployed:")
     print("1. Push to GitHub: git add . && git commit -m 'Data in Qdrant' && git push")
     print("2. Deploy on Streamlit Cloud")
     print("3. Add API keys to Secrets")
     print("4. Launch!")
-    print("\nNo database files to upload - everything is in Qdrant Cloud! 🚀")
+    print("\nNo lyrics API needed - using audio features only! 🚀")
     print("="*60)
 
 
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
-        description='Collect music data to Qdrant Cloud (deployment-ready)'
+        description='Collect music data to Qdrant Cloud (audio features only)'
     )
 
     parser.add_argument(
@@ -234,10 +218,10 @@ def main():
         print("   QDRANT_HOST=your-cluster.qdrant.io")
         print("   QDRANT_API_KEY=your_api_key")
         print("   QDRANT_USE_CLOUD=true")
-        print("\nContinuing anyway (will use local Qdrant)...")
+        print("\nContinuing anyway (will use configured Qdrant)...")
         print("="*60 + "\n")
 
-        response = input("Continue with local Qdrant? (y/n): ")
+        response = input("Continue? (y/n): ")
         if response.lower() != 'y':
             print("Aborted. Please configure Qdrant Cloud first.")
             sys.exit(0)
@@ -246,8 +230,7 @@ def main():
     try:
         collect_to_qdrant(
             genres=args.genres,
-            songs_per_genre=songs_per_genre,
-            min_lyric_words=50
+            songs_per_genre=songs_per_genre
         )
     except KeyboardInterrupt:
         print("\n\n✗ Collection interrupted by user")

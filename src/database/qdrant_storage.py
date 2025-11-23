@@ -103,7 +103,7 @@ class QdrantStorage:
         Add song to Qdrant with full metadata
 
         Args:
-            song: Dictionary with song data (name, artist, features, lyrics, etc.)
+            song: Dictionary with song data (name, artist, features, etc.)
 
         Returns:
             Song ID (UUID)
@@ -128,7 +128,6 @@ class QdrantStorage:
                 'artist': song.get('artist', ''),
                 'album': song.get('album', ''),
                 'genre': song.get('genre', ''),
-                'lyrics': song.get('lyrics', ''),
                 'popularity': song.get('popularity', 0),
                 'duration_ms': song.get('duration_ms', 0),
                 'explicit': song.get('explicit', False),
@@ -192,8 +191,7 @@ class QdrantStorage:
                         'artist': song.get('artist', ''),
                         'album': song.get('album', ''),
                         'genre': song.get('genre', ''),
-                        'lyrics': song.get('lyrics', ''),
-                        'popularity': song.get('popularity', 0),
+                                'popularity': song.get('popularity', 0),
                         'duration_ms': song.get('duration_ms', 0),
                         'explicit': song.get('explicit', False),
                         'danceability': song.get('features', {}).get('danceability', 0),
@@ -561,11 +559,7 @@ class QdrantStorage:
         if feature_desc:
             parts.append(f"Characteristics: {', '.join(feature_desc)}")
 
-        # Lyrics preview
-        lyrics = song.get('lyrics', '')
-        if lyrics:
-            lyrics_preview = ' '.join(lyrics.split()[:100])
-            parts.append(f"Lyrics: {lyrics_preview}")
+        # No lyrics - using audio features only
 
         return '. '.join(parts)
 
