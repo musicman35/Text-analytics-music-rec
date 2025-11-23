@@ -56,6 +56,11 @@ rec_system = components['system']
 db = components['db']
 metrics = components['metrics']
 
+# Helper function to get song ID
+def get_song_id(song):
+    """Get song ID from song dict, handling different field names"""
+    return song.get('song_id', song.get('spotify_id', song.get('name', 'unknown')))
+
 # Custom CSS
 st.markdown("""
     <style>
@@ -226,12 +231,16 @@ with tab1:
                     st.write(f"**Artist:** {song['artist']}")
                     st.write(f"**Genre:** {song.get('genre', 'Unknown').capitalize()}")
 
-                    # Features
+                    # Features - check both features dict and individual fields
                     features = song.get('features', {})
-                    if features:
-                        feature_text = f"Energy: {features.get('energy', 0):.2f} | "
-                        feature_text += f"Valence: {features.get('valence', 0):.2f} | "
-                        feature_text += f"Danceability: {features.get('danceability', 0):.2f}"
+                    energy = features.get('energy') if features else song.get('energy', 0)
+                    valence = features.get('valence') if features else song.get('valence', 0)
+                    danceability = features.get('danceability') if features else song.get('danceability', 0)
+
+                    if energy or valence or danceability:
+                        feature_text = f"Energy: {energy:.2f} | "
+                        feature_text += f"Valence: {valence:.2f} | "
+                        feature_text += f"Danceability: {danceability:.2f}"
                         st.caption(feature_text)
 
                 with col2:
@@ -240,13 +249,13 @@ with tab1:
                         "Rate",
                         options=[None, 1, 2, 3, 4, 5],
                         format_func=lambda x: "⭐" * x if x else "Rate",
-                        key=f"rating_{i}_{song['id']}"
+                        key=f"rating_{i}_{get_song_id(song)}"
                     )
 
                     if rating:
                         rec_system.record_feedback(
                             user_id=st.session_state.user_id,
-                            song_id=song['id'],
+                            song_id=get_song_id(song),
                             rating=rating,
                             action_type='rate',
                             session_id=st.session_state.session_id
@@ -255,19 +264,19 @@ with tab1:
 
                 with col3:
                     # Actions
-                    if st.button("👍", key=f"like_{i}_{song['id']}"):
+                    if st.button("👍", key=f"like_{i}_{get_song_id(song)}"):
                         rec_system.record_feedback(
                             st.session_state.user_id,
-                            song['id'],
+                            get_song_id(song),
                             action_type='like',
                             session_id=st.session_state.session_id
                         )
                         st.success("Liked!")
 
-                    if st.button("👎", key=f"dislike_{i}_{song['id']}"):
+                    if st.button("👎", key=f"dislike_{i}_{get_song_id(song)}"):
                         rec_system.record_feedback(
                             st.session_state.user_id,
-                            song['id'],
+                            get_song_id(song),
                             action_type='dislike',
                             session_id=st.session_state.session_id
                         )
