@@ -93,6 +93,20 @@ class QdrantStorage:
                 )
                 print(f"✓ Created collection: {self.interactions_collection}")
 
+            # Ensure user_id field has an index for filtering
+            try:
+                from qdrant_client.http.models import PayloadSchemaType
+                self.client.create_payload_index(
+                    collection_name=self.interactions_collection,
+                    field_name="user_id",
+                    field_schema=PayloadSchemaType.KEYWORD
+                )
+                print(f"✓ Created index on user_id for {self.interactions_collection}")
+            except Exception as idx_error:
+                # Index might already exist, which is fine
+                if "already exists" not in str(idx_error).lower():
+                    print(f"Note: Could not create user_id index: {idx_error}")
+
         except Exception as e:
             print(f"Error ensuring collections: {e}")
 
