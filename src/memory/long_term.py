@@ -65,14 +65,15 @@ class LongTermMemory:
         print(f"Updating long-term memory for user {self.user_id}...")
 
         # Extract liked songs (rating >= 4 or positive actions)
+        # Handle both 'action_type' and 'interaction_type' field names for backward compatibility
         liked_songs = [i for i in all_interactions
                       if (i.get('rating') and i['rating'] >= 4) or
-                         i['action_type'] in ['like', 'play', 'save']]
+                         i.get('action_type', i.get('interaction_type')) in ['like', 'play', 'save']]
 
         # Extract disliked songs
         disliked_songs = [i for i in all_interactions
                          if (i.get('rating') and i['rating'] <= 2) or
-                            i['action_type'] == 'dislike']
+                            i.get('action_type', i.get('interaction_type')) == 'dislike']
 
         # Update genre preferences
         self._update_genre_preferences(liked_songs, disliked_songs)
