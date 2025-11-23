@@ -203,7 +203,7 @@ class RecommendationMetrics:
         liked_songs = [i['song_id'] for i in interactions
                       if i.get('rating') and i['rating'] >= 4]
 
-        recommended_ids = [song['id'] for song in recommended]
+        recommended_ids = [song.get('song_id', song.get('spotify_id', '')) for song in recommended]
 
         metrics = {
             'user_id': user_id,

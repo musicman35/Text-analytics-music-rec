@@ -157,7 +157,7 @@ class MusicRecommendationSystem:
             print(f"Evaluation: Diversity={evaluation['diversity_score']:.2f}, Quality={evaluation['quality_score']:.2f}")
 
             # Save recommendation session
-            recommended_song_ids = [song['id'] for song in recommendations]
+            recommended_song_ids = [song.get('song_id', song.get('spotify_id', '')) for song in recommendations]
             self.db.save_recommendation(
                 session_id=session_id,
                 user_id=user_id,
