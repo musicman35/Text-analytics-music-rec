@@ -138,7 +138,8 @@ with st.sidebar:
         interactions = db.get_user_interactions(st.session_state.user_id)
         profile = rec_system.get_user_profile(st.session_state.user_id)
 
-        st.metric("Total Interactions", profile.get('total_interactions', 0))
+        # Show actual interaction count from database
+        st.metric("Total Interactions", len(interactions))
 
         if profile.get('genre_preferences'):
             st.write("**Top Genres:**")
@@ -261,6 +262,7 @@ with tab1:
                             session_id=st.session_state.session_id
                         )
                         st.success("Rated!")
+                        st.rerun()
 
                 with col3:
                     # Actions
@@ -272,6 +274,7 @@ with tab1:
                             session_id=st.session_state.session_id
                         )
                         st.success("Liked!")
+                        st.rerun()
 
                     if st.button("👎", key=f"dislike_{i}_{get_song_id(song)}"):
                         rec_system.record_feedback(
@@ -281,6 +284,7 @@ with tab1:
                             session_id=st.session_state.session_id
                         )
                         st.info("Noted!")
+                        st.rerun()
 
                 st.divider()
 
