@@ -175,7 +175,10 @@ class LyricsCollector:
         print(f"\n{'='*60}")
         print(f"Total songs with lyrics: {len(all_songs)}")
         lyrics_count = sum(1 for s in all_songs if s.get('lyrics'))
-        print(f"Lyrics found: {lyrics_count}/{len(all_songs)} ({lyrics_count/len(all_songs)*100:.1f}%)")
+        if len(all_songs) > 0:
+            print(f"Lyrics found: {lyrics_count}/{len(all_songs)} ({lyrics_count/len(all_songs)*100:.1f}%)")
+        else:
+            print(f"Lyrics found: 0/0 (No songs to process)")
         print(f"{'='*60}")
 
         return all_songs

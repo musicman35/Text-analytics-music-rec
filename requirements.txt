@@ -13,6 +13,7 @@ sqlalchemy
 # Data Processing
 pandas
 numpy
+datasets
 
 # API Clients
 spotipy
