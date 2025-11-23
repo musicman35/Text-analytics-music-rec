@@ -1,0 +1,51 @@
+# Core LangChain (latest versions compatible with Python 3.13)
+langchain
+langchain-community
+langchain-openai
+langchain-anthropic
+
+# Vector Database (use latest version)
+qdrant-client
+
+# Database
+sqlalchemy
+
+# Data Processing
+pandas
+numpy
+
+# API Clients
+spotipy
+lyricsgenius
+cohere
+openai
+anthropic
+
+# Web Framework
+flask
+flask-cors
+streamlit
+
+# HTTP Requests
+requests
+aiohttp
+
+# Evaluation & Visualization
+scikit-learn
+matplotlib
+plotly
+seaborn
+
+# Environment & Configuration
+python-dotenv
+
+# Utilities
+tqdm
+python-dateutil
+
+# Testing
+pytest
+pytest-asyncio
+
+# Logging
+loguru
