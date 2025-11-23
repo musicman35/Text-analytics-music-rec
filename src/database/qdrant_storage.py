@@ -11,6 +11,12 @@ from openai import OpenAI
 import uuid
 from typing import List, Dict, Optional
 from tqdm import tqdm
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 import config
 
 
@@ -35,7 +41,11 @@ class QdrantStorage:
             )
 
         # Initialize OpenAI for embeddings
-        self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
+        # Use env var directly to avoid fallback values
+        openai_key = os.getenv("OPENAI_API_KEY")
+        if not openai_key or openai_key == "your_openai_api_key":
+            openai_key = config.OPENAI_API_KEY  # Fallback to config if needed
+        self.openai_client = OpenAI(api_key=openai_key)
 
         # Collection names
         self.songs_collection = "songs"
@@ -165,7 +175,10 @@ class QdrantStorage:
 
             for song in batch:
                 try:
-                    song_id = song.get('spotify_id', str(uuid.uuid4()))
+                    # Use UUID for Qdrant point ID, store spotify_id in payload
+                    point_id = str(uuid.uuid4())
+                    spotify_id = song.get('spotify_id', '')
+
                     description = self._create_song_description(song)
                     embedding = self._generate_embedding(description)
 
@@ -173,7 +186,8 @@ class QdrantStorage:
                         continue
 
                     payload = {
-                        'song_id': song_id,
+                        'song_id': point_id,  # Internal ID for references
+                        'spotify_id': spotify_id,  # Original Spotify ID
                         'name': song.get('name', ''),
                         'artist': song.get('artist', ''),
                         'album': song.get('album', ''),
@@ -198,7 +212,7 @@ class QdrantStorage:
 
                     points.append(
                         PointStruct(
-                            id=song_id,
+                            id=point_id,  # Use UUID instead of spotify_id
                             vector=embedding,
                             payload=payload
                         )
@@ -248,20 +262,24 @@ class QdrantStorage:
                     ]
                 )
 
-            # Search
-            results = self.client.search(
+            # Search using query method
+            response = self.client.query_points(
                 collection_name=self.songs_collection,
-                query_vector=embedding,
+                query=embedding,
                 limit=limit,
                 query_filter=query_filter
             )
 
             # Convert to song dictionaries
             songs = []
-            for result in results:
-                song = result.payload.copy()
-                song['score'] = result.score
-                songs.append(song)
+            # query_points returns a QueryResponse object with a points attribute
+            if hasattr(response, 'points') and response.points:
+                for result in response.points:
+                    if hasattr(result, 'payload'):
+                        song = result.payload.copy()
+                        if hasattr(result, 'score'):
+                            song['score'] = result.score
+                        songs.append(song)
 
             return songs
 
@@ -339,20 +357,38 @@ class QdrantStorage:
 
         return user_id
 
-    def get_user(self, user_id: str) -> Optional[Dict]:
-        """Get user by ID"""
+    def get_user(self, user_id: str = None, username: str = None) -> Optional[Dict]:
+        """Get user by ID or username"""
         try:
-            result = self.client.retrieve(
-                collection_name=self.users_collection,
-                ids=[user_id]
-            )
+            if user_id:
+                # Get by user_id
+                result = self.client.retrieve(
+                    collection_name=self.users_collection,
+                    ids=[user_id]
+                )
 
-            if result:
-                return result[0].payload
+                if result:
+                    return result[0].payload
+
+            elif username:
+                # Get all users and search by username (since we don't have an index)
+                # This is inefficient but works for small user bases
+                result, _ = self.client.scroll(
+                    collection_name=self.users_collection,
+                    limit=1000  # Reasonable limit for users
+                )
+
+                # Search for matching username
+                for point in result:
+                    if point.payload.get('username') == username:
+                        user_data = point.payload
+                        user_data['id'] = point.id
+                        return user_data
 
             return None
 
-        except:
+        except Exception as e:
+            print(f"Error getting user: {e}")
             return None
 
     # ==================== INTERACTION OPERATIONS ====================

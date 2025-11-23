@@ -10,6 +10,10 @@ from datetime import datetime
 import uuid
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add src to path
 sys.path.append(str(Path(__file__).parent))
@@ -96,14 +100,22 @@ with st.sidebar:
 
         with col2:
             if st.button("Register"):
-                try:
-                    user_id = db.create_user(username)
-                    st.session_state.user_id = user_id
-                    st.session_state.username = username
-                    st.success(f"Welcome, {username}!")
-                    st.rerun()
-                except:
-                    st.error("Username already exists")
+                if not username:
+                    st.error("Please enter a username")
+                else:
+                    # Check if user already exists
+                    existing_user = db.get_user(username=username)
+                    if existing_user:
+                        st.error("Username already exists")
+                    else:
+                        try:
+                            user_id = db.create_user(username)
+                            st.session_state.user_id = user_id
+                            st.session_state.username = username
+                            st.success(f"Welcome, {username}!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error creating user: {str(e)}")
 
     else:
         st.write(f"**Logged in as:** {st.session_state.username}")

@@ -47,136 +47,150 @@ class MusicRecommendationSystem:
         Returns:
             Dict with recommendations and full pipeline trace
         """
-        # Generate session ID if not provided
-        if session_id is None:
-            session_id = str(uuid.uuid4())
+        try:
+            # Generate session ID if not provided
+            if session_id is None:
+                session_id = str(uuid.uuid4())
 
-        print(f"\n{'='*80}")
-        print(f"RECOMMENDATION PIPELINE - Session: {session_id}")
-        print(f"{'='*80}")
-        print(f"User: {user_id} | Query: '{query}'")
+            print(f"\n{'='*80}")
+            print(f"RECOMMENDATION PIPELINE - Session: {session_id}")
+            print(f"{'='*80}")
+            print(f"User: {user_id} | Query: '{query}'")
 
-        # Initialize short-term memory for session
-        short_term = get_short_term_memory(user_id, session_id)
-        short_term.add_query(query)
+            # Initialize short-term memory for session
+            short_term = get_short_term_memory(user_id, session_id)
+            short_term.add_query(query)
 
-        pipeline_trace = {
-            'session_id': session_id,
-            'user_id': user_id,
-            'query': query,
-            'timestamp': datetime.now().isoformat(),
-            'stages': {}
-        }
-
-        # Stage 1: Retrieval
-        print(f"\n{'='*80}")
-        print("STAGE 1: RETRIEVAL")
-        print(f"{'='*80}")
-
-        retrieval_result = self.retriever.retrieve_with_expansion(
-            query,
-            use_enhancement=False,
-            genre_filter=genre_filter
-        )
-
-        candidates = retrieval_result['candidates']
-        pipeline_trace['stages']['retrieval'] = {
-            'agent': 'RetrieverAgent',
-            'candidates_count': len(candidates),
-            'metadata': retrieval_result['metadata']
-        }
-
-        print(f"Retrieved {len(candidates)} candidates")
-
-        if not candidates:
-            return {
-                'recommendations': [],
-                'message': 'No songs found matching your query',
-                'pipeline_trace': pipeline_trace
+            pipeline_trace = {
+                'session_id': session_id,
+                'user_id': user_id,
+                'query': query,
+                'timestamp': datetime.now().isoformat(),
+                'stages': {}
             }
 
-        # Stage 2: Analysis
-        print(f"\n{'='*80}")
-        print("STAGE 2: USER ANALYSIS")
-        print(f"{'='*80}")
+            # Stage 1: Retrieval
+            print(f"\n{'='*80}")
+            print("STAGE 1: RETRIEVAL")
+            print(f"{'='*80}")
 
-        user_analysis = self.analyzer.analyze_user(user_id, short_term)
-        pipeline_trace['stages']['analysis'] = {
-            'agent': 'AnalyzerAgent',
-            'profile_summary': user_analysis['profile_summary'],
-            'total_interactions': user_analysis['total_interactions']
-        }
+            retrieval_result = self.retriever.retrieve_with_expansion(
+                query,
+                use_enhancement=False,
+                genre_filter=genre_filter
+            )
 
-        print(f"User profile: {user_analysis['profile_summary'][:100]}...")
+            candidates = retrieval_result['candidates']
+            pipeline_trace['stages']['retrieval'] = {
+                'agent': 'RetrieverAgent',
+                'candidates_count': len(candidates),
+                'metadata': retrieval_result['metadata']
+            }
 
-        # Stage 3: Curation
-        print(f"\n{'='*80}")
-        print("STAGE 3: CURATION")
-        print(f"{'='*80}")
+            print(f"Retrieved {len(candidates)} candidates")
 
-        curation_result = self.curator.curate_recommendations(
-            candidates,
-            query,
-            user_analysis,
-            user_id,
-            enable_time_matching=enable_time_matching,
-            enable_reranking=enable_reranking
-        )
+            if not candidates:
+                return {
+                    'success': False,
+                    'recommendations': [],
+                    'message': 'No songs found matching your query',
+                    'pipeline_trace': pipeline_trace
+                }
 
-        recommendations = curation_result['recommendations']
-        pipeline_trace['stages']['curation'] = {
-            'agent': 'CuratorAgent',
-            'final_count': len(recommendations),
-            'metadata': curation_result['metadata'],
-            'reasoning': curation_result['reasoning']
-        }
+            # Stage 2: Analysis
+            print(f"\n{'='*80}")
+            print("STAGE 2: USER ANALYSIS")
+            print(f"{'='*80}")
 
-        print(f"Curated {len(recommendations)} final recommendations")
+            user_analysis = self.analyzer.analyze_user(user_id, short_term)
+            pipeline_trace['stages']['analysis'] = {
+                'agent': 'AnalyzerAgent',
+                'profile_summary': user_analysis['profile_summary'],
+                'total_interactions': user_analysis['total_interactions']
+            }
 
-        # Stage 4: Critique
-        print(f"\n{'='*80}")
-        print("STAGE 4: EVALUATION")
-        print(f"{'='*80}")
+            print(f"User profile: {user_analysis['profile_summary'][:100]}...")
 
-        evaluation = self.critic.evaluate_recommendations(
-            recommendations,
-            query,
-            user_analysis
-        )
+            # Stage 3: Curation
+            print(f"\n{'='*80}")
+            print("STAGE 3: CURATION")
+            print(f"{'='*80}")
 
-        pipeline_trace['stages']['critique'] = {
-            'agent': 'CriticAgent',
-            'diversity_score': evaluation['diversity_score'],
-            'quality_score': evaluation['quality_score'],
-            'issues_count': len(evaluation['issues']),
-            'feedback': evaluation['feedback']
-        }
+            curation_result = self.curator.curate_recommendations(
+                candidates,
+                query,
+                user_analysis,
+                user_id,
+                enable_time_matching=enable_time_matching,
+                enable_reranking=enable_reranking
+            )
 
-        print(f"Evaluation: Diversity={evaluation['diversity_score']:.2f}, Quality={evaluation['quality_score']:.2f}")
+            recommendations = curation_result['recommendations']
+            pipeline_trace['stages']['curation'] = {
+                'agent': 'CuratorAgent',
+                'final_count': len(recommendations),
+                'metadata': curation_result['metadata'],
+                'reasoning': curation_result['reasoning']
+            }
 
-        # Save recommendation session
-        recommended_song_ids = [song['id'] for song in recommendations]
-        self.db.save_recommendation(
-            session_id=session_id,
-            user_id=user_id,
-            recommended_songs=recommended_song_ids,
-            agent_reasoning=curation_result['reasoning']
-        )
+            print(f"Curated {len(recommendations)} final recommendations")
 
-        # Save to short-term memory
-        short_term.save_to_database()
+            # Stage 4: Critique
+            print(f"\n{'='*80}")
+            print("STAGE 4: EVALUATION")
+            print(f"{'='*80}")
 
-        print(f"\n{'='*80}")
-        print("PIPELINE COMPLETE")
-        print(f"{'='*80}\n")
+            evaluation = self.critic.evaluate_recommendations(
+                recommendations,
+                query,
+                user_analysis
+            )
 
-        return {
-            'success': True,
-            'recommendations': recommendations,
-            'evaluation': evaluation,
-            'pipeline_trace': pipeline_trace,
-            'session_id': session_id
-        }
+            pipeline_trace['stages']['critique'] = {
+                'agent': 'CriticAgent',
+                'diversity_score': evaluation['diversity_score'],
+                'quality_score': evaluation['quality_score'],
+                'issues_count': len(evaluation['issues']),
+                'feedback': evaluation['feedback']
+            }
+
+            print(f"Evaluation: Diversity={evaluation['diversity_score']:.2f}, Quality={evaluation['quality_score']:.2f}")
+
+            # Save recommendation session
+            recommended_song_ids = [song['id'] for song in recommendations]
+            self.db.save_recommendation(
+                session_id=session_id,
+                user_id=user_id,
+                recommended_songs=recommended_song_ids,
+                agent_reasoning=curation_result['reasoning']
+            )
+
+            # Save to short-term memory
+            short_term.save_to_database()
+
+            print(f"\n{'='*80}")
+            print("PIPELINE COMPLETE")
+            print(f"{'='*80}\n")
+
+            return {
+                'success': True,
+                'recommendations': recommendations,
+                'evaluation': evaluation,
+                'pipeline_trace': pipeline_trace,
+                'session_id': session_id
+            }
+
+        except Exception as e:
+            print(f"ERROR in recommendation pipeline: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+            return {
+                'success': False,
+                'recommendations': [],
+                'message': f'Error generating recommendations: {str(e)}',
+                'pipeline_trace': {}
+            }
 
     def record_feedback(self, user_id: int, song_id: int,
                        rating: int = None, action_type: str = 'view',
