@@ -400,6 +400,15 @@ class QdrantStorage:
             print(f"Error getting interactions: {e}")
             return []
 
+    def save_recommendation(self, session_id: str, user_id: str,
+                           recommended_songs: List[str], agent_reasoning: Dict):
+        """
+        Save recommendation session
+        Note: Currently a stub - recommendations are not persisted
+        TODO: Implement Qdrant-based recommendation history storage
+        """
+        pass
+
     # ==================== MEMORY MANAGEMENT ====================
 
     def get_user_memory(self, user_id: str) -> Optional[Dict]:
