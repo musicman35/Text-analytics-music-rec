@@ -50,8 +50,8 @@ class ShortTermMemory:
         if len(self.recent_interactions) > self.window_size:
             self.recent_interactions = self.recent_interactions[-self.window_size:]
 
-        # Also save to database
-        self.db.add_interaction(self.user_id, song_id, action_type, rating)
+        # Note: Database saving is handled by recommendation_system.record_feedback()
+        # to avoid duplicate entries
 
     def add_conversation_turn(self, role: str, content: str):
         """Add conversation turn to context"""
