@@ -9,6 +9,7 @@ import numpy as np
 from collections import Counter, defaultdict
 import config
 from src.database.qdrant_storage import QdrantStorage
+from src.utils.audio_features import extract_features_from_song
 
 
 class LongTermMemory:
@@ -135,15 +136,8 @@ class LongTermMemory:
             if not song_data:
                 continue
 
-            # Try to get features from nested dict first, then individual fields
-            features = song_data.get('features', {})
-            if not features:
-                # Reconstruct from individual fields
-                features = {
-                    feature_name: song_data.get(feature_name)
-                    for feature_name in config.AUDIO_FEATURES
-                    if song_data.get(feature_name) is not None
-                }
+            # Use shared utility to extract features
+            features = extract_features_from_song(song_data)
 
             for feature_name in config.AUDIO_FEATURES:
                 if feature_name in features:
@@ -214,20 +208,9 @@ class LongTermMemory:
                     if not song_data:
                         continue
 
-                    # Try to get features from nested dict first, then individual fields
-                    features = song_data.get('features', {})
-                    if not features:
-                        # Reconstruct from individual fields
-                        features = {
-                            'energy': song_data.get('energy'),
-                            'valence': song_data.get('valence'),
-                            'danceability': song_data.get('danceability')
-                        }
-                        # Only add if we have at least some features
-                        features = {k: v for k, v in features.items() if v is not None}
-
-                    if features:
-                        time_patterns[period].append(features)
+                    # Use shared utility to extract features
+                    features = extract_features_from_song(song_data)
+                    time_patterns[period].append(features)
                 except:
                     pass
 

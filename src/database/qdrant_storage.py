@@ -18,6 +18,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import config
+from src.utils.audio_features import (
+    extract_features_from_song,
+    create_song_payload,
+    create_song_description
+)
 
 
 class QdrantStorage:
@@ -298,21 +303,8 @@ class QdrantStorage:
                         if hasattr(result, 'score'):
                             song['score'] = result.score
 
-                        # Reconstruct features dict for compatibility
-                        song['features'] = {
-                            'danceability': song.get('danceability', 0),
-                            'energy': song.get('energy', 0),
-                            'valence': song.get('valence', 0),
-                            'tempo': song.get('tempo', 0),
-                            'loudness': song.get('loudness', 0),
-                            'speechiness': song.get('speechiness', 0),
-                            'acousticness': song.get('acousticness', 0),
-                            'instrumentalness': song.get('instrumentalness', 0),
-                            'liveness': song.get('liveness', 0),
-                            'key': song.get('key', 0),
-                            'mode': song.get('mode', 1),
-                            'time_signature': song.get('time_signature', 4),
-                        }
+                        # Reconstruct features dict using shared utility
+                        song['features'] = extract_features_from_song(song)
 
                         # Ensure lyrics fields are present
                         if 'lyrics_preview' not in song:
@@ -557,21 +549,8 @@ class QdrantStorage:
                 point = result[0]
                 song = point.payload.copy()
 
-                # Reconstruct features from payload
-                song['features'] = {
-                    'danceability': song.get('danceability', 0),
-                    'energy': song.get('energy', 0),
-                    'valence': song.get('valence', 0),
-                    'tempo': song.get('tempo', 0),
-                    'loudness': song.get('loudness', 0),
-                    'speechiness': song.get('speechiness', 0),
-                    'acousticness': song.get('acousticness', 0),
-                    'instrumentalness': song.get('instrumentalness', 0),
-                    'liveness': song.get('liveness', 0),
-                    'key': song.get('key', 0),
-                    'mode': song.get('mode', 1),
-                    'time_signature': song.get('time_signature', 4),
-                }
+                # Reconstruct features using shared utility
+                song['features'] = extract_features_from_song(song)
 
                 return song
 
@@ -606,44 +585,8 @@ class QdrantStorage:
 
     def _create_song_description(self, song: Dict) -> str:
         """Create rich description for embedding, including lyrics if available"""
-        features = song.get('features', {})
-
-        # Build description
-        parts = [
-            f"Song: {song.get('name', '')} by {song.get('artist', '')}",
-            f"Genre: {song.get('genre', 'unknown')}",
-        ]
-
-        # Audio features
-        feature_desc = []
-        if features.get('energy', 0) > 0.7:
-            feature_desc.append("high energy")
-        elif features.get('energy', 0) < 0.3:
-            feature_desc.append("low energy")
-
-        if features.get('valence', 0) > 0.7:
-            feature_desc.append("positive mood")
-        elif features.get('valence', 0) < 0.3:
-            feature_desc.append("melancholic")
-
-        if features.get('danceability', 0) > 0.7:
-            feature_desc.append("danceable")
-        if features.get('acousticness', 0) > 0.7:
-            feature_desc.append("acoustic")
-        if features.get('instrumentalness', 0) > 0.5:
-            feature_desc.append("instrumental")
-
-        if feature_desc:
-            parts.append(f"Characteristics: {', '.join(feature_desc)}")
-
-        # Add lyrics preview if available (enhances semantic search)
-        lyrics_preview = song.get('lyrics_preview', '')
-        if lyrics_preview:
-            # Truncate to avoid embedding size issues
-            truncated_lyrics = lyrics_preview[:300] if len(lyrics_preview) > 300 else lyrics_preview
-            parts.append(f"Lyrics excerpt: {truncated_lyrics}")
-
-        return '. '.join(parts)
+        # Use shared utility function
+        return create_song_description(song, include_lyrics=True, max_lyrics_chars=300)
 
     def clear_all_data(self):
         """Clear all collections (use with caution!)"""
