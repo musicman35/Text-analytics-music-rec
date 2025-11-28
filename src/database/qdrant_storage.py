@@ -158,6 +158,9 @@ class QdrantStorage:
                 'key': song.get('features', {}).get('key', 0),
                 'mode': song.get('features', {}).get('mode', 1),
                 'time_signature': song.get('features', {}).get('time_signature', 4),
+                # Lyrics (if available)
+                'lyrics_preview': song.get('lyrics_preview', ''),
+                'has_lyrics': bool(song.get('lyrics_preview')),
             }
 
             # Upload to Qdrant
@@ -205,7 +208,7 @@ class QdrantStorage:
                         'artist': song.get('artist', ''),
                         'album': song.get('album', ''),
                         'genre': song.get('genre', ''),
-                                'popularity': song.get('popularity', 0),
+                        'popularity': song.get('popularity', 0),
                         'duration_ms': song.get('duration_ms', 0),
                         'explicit': song.get('explicit', False),
                         'danceability': song.get('features', {}).get('danceability', 0),
@@ -220,6 +223,9 @@ class QdrantStorage:
                         'key': song.get('features', {}).get('key', 0),
                         'mode': song.get('features', {}).get('mode', 1),
                         'time_signature': song.get('features', {}).get('time_signature', 4),
+                        # Lyrics (if available)
+                        'lyrics_preview': song.get('lyrics_preview', ''),
+                        'has_lyrics': bool(song.get('lyrics_preview')),
                     }
 
                     points.append(
@@ -307,6 +313,12 @@ class QdrantStorage:
                             'mode': song.get('mode', 1),
                             'time_signature': song.get('time_signature', 4),
                         }
+
+                        # Ensure lyrics fields are present
+                        if 'lyrics_preview' not in song:
+                            song['lyrics_preview'] = ''
+                        if 'has_lyrics' not in song:
+                            song['has_lyrics'] = bool(song.get('lyrics_preview'))
 
                         songs.append(song)
 
@@ -593,7 +605,7 @@ class QdrantStorage:
             return None
 
     def _create_song_description(self, song: Dict) -> str:
-        """Create rich description for embedding"""
+        """Create rich description for embedding, including lyrics if available"""
         features = song.get('features', {})
 
         # Build description
@@ -606,17 +618,30 @@ class QdrantStorage:
         feature_desc = []
         if features.get('energy', 0) > 0.7:
             feature_desc.append("high energy")
+        elif features.get('energy', 0) < 0.3:
+            feature_desc.append("low energy")
+
         if features.get('valence', 0) > 0.7:
             feature_desc.append("positive mood")
+        elif features.get('valence', 0) < 0.3:
+            feature_desc.append("melancholic")
+
         if features.get('danceability', 0) > 0.7:
             feature_desc.append("danceable")
         if features.get('acousticness', 0) > 0.7:
             feature_desc.append("acoustic")
+        if features.get('instrumentalness', 0) > 0.5:
+            feature_desc.append("instrumental")
 
         if feature_desc:
             parts.append(f"Characteristics: {', '.join(feature_desc)}")
 
-        # No lyrics - using audio features only
+        # Add lyrics preview if available (enhances semantic search)
+        lyrics_preview = song.get('lyrics_preview', '')
+        if lyrics_preview:
+            # Truncate to avoid embedding size issues
+            truncated_lyrics = lyrics_preview[:300] if len(lyrics_preview) > 300 else lyrics_preview
+            parts.append(f"Lyrics excerpt: {truncated_lyrics}")
 
         return '. '.join(parts)
 

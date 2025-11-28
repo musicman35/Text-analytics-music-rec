@@ -107,7 +107,7 @@ AGENT_TEMPERATURE = 0.7
 RETRIEVER_AGENT_PROMPT = """
 You are a music retrieval specialist. Your task is to understand user queries
 and retrieve the most semantically relevant songs from the vector database.
-Consider both lyrical content and audio features when matching user requests.
+Consider audio features when matching user requests.
 Always retrieve {candidate_count} candidates for further processing.
 """
 
@@ -167,6 +167,4 @@ ENABLE_CACHING = True
 CACHE_EXPIRY_HOURS = 24
 
 # Rate Limiting (for API calls)
-SPOTIFY_RATE_LIMIT_DELAY = 0.1  # seconds
-GENIUS_RATE_LIMIT_DELAY = 0.5   # seconds
 OPENAI_RATE_LIMIT_DELAY = 0.05  # seconds

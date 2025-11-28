@@ -24,8 +24,9 @@ wheels/
 venv/
 ENV/
 env/
+.venv/
 
-# Environment Variables
+# Environment Variables (keep .env.template)
 .env
 
 # IDE
@@ -35,13 +36,11 @@ env/
 *.swo
 *~
 
-# Data
+# Data and Cache
 data/
 *.db
 *.sqlite
 *.sqlite3
-
-# Cache
 cache/
 *.cache
 .cache/
@@ -62,7 +61,16 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
 
 # Temporary files
 *.tmp
 temp/
+*.bak
+
+# MyPy
+.mypy_cache/
+
+# Distribution
+*.manifest
+*.spec
