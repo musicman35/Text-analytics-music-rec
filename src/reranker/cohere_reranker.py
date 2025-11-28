@@ -6,6 +6,7 @@ Reranks candidate songs using Cohere's reranking API
 import cohere
 from typing import List, Dict
 import config
+from src.utils.audio_features import extract_features_from_song, describe_audio_features
 
 
 class CohereReranker:
@@ -28,36 +29,9 @@ class CohereReranker:
         documents = []
 
         for song in songs:
-            features = song.get('features', {})
-
-            # Create feature description
-            feature_parts = []
-
-            energy = features.get('energy', 0.5)
-            if energy > 0.7:
-                feature_parts.append("high energy")
-            elif energy < 0.3:
-                feature_parts.append("low energy")
-            else:
-                feature_parts.append("moderate energy")
-
-            valence = features.get('valence', 0.5)
-            if valence > 0.7:
-                feature_parts.append("positive/happy")
-            elif valence < 0.3:
-                feature_parts.append("sad/melancholic")
-            else:
-                feature_parts.append("neutral mood")
-
-            if features.get('danceability', 0) > 0.7:
-                feature_parts.append("very danceable")
-
-            if features.get('acousticness', 0) > 0.7:
-                feature_parts.append("acoustic")
-
-            if features.get('instrumentalness', 0) > 0.5:
-                feature_parts.append("mostly instrumental")
-
+            # Use shared utility for feature extraction and description
+            features = extract_features_from_song(song)
+            feature_parts = describe_audio_features(features)
             features_desc = ", ".join(feature_parts)
 
             # Build document

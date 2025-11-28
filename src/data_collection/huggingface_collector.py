@@ -1,20 +1,49 @@
 """
 Hugging Face Spotify Dataset Collector
 Uses maharshipandya/spotify-tracks-dataset from Hugging Face
+Optionally enriches songs with lyrics from Genius API
 """
 
 import pandas as pd
 from datasets import load_dataset
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 import time
 from tqdm import tqdm
+
+# Optional lyrics support
+try:
+    from src.data_collection.lyrics_fetcher import LyricsFetcher
+    LYRICS_AVAILABLE = True
+except ImportError:
+    LYRICS_AVAILABLE = False
+    LyricsFetcher = None
 
 class HuggingFaceCollector:
     """Collect songs from Hugging Face Spotify dataset"""
 
-    def __init__(self):
+    def __init__(self, fetch_lyrics: bool = False):
+        """
+        Initialize the collector
+
+        Args:
+            fetch_lyrics: If True, fetch lyrics from Genius API for each song
+        """
         self.dataset = None
         self.df = None
+        self.fetch_lyrics = fetch_lyrics
+        self.lyrics_fetcher = None
+
+        if fetch_lyrics:
+            if not LYRICS_AVAILABLE:
+                print("Warning: Lyrics fetcher not available. Install lyricsgenius: pip install lyricsgenius")
+                self.fetch_lyrics = False
+            else:
+                try:
+                    self.lyrics_fetcher = LyricsFetcher()
+                    print("✓ Lyrics fetcher initialized")
+                except (ValueError, ImportError) as e:
+                    print(f"Warning: Could not initialize lyrics fetcher: {e}")
+                    self.fetch_lyrics = False
 
     def load_dataset(self):
         """Load the Spotify dataset from Hugging Face"""
@@ -76,11 +105,15 @@ class HuggingFaceCollector:
 
         return result
 
-    def prepare_song_data(self, row: pd.Series) -> Dict:
+    def prepare_song_data(self, row: pd.Series, fetch_lyrics: bool = None) -> Dict:
         """
         Convert DataFrame row to standardized song dictionary
 
         Maps Hugging Face dataset fields to our schema
+
+        Args:
+            row: DataFrame row with song data
+            fetch_lyrics: Override instance setting for fetching lyrics
         """
         song = {
             # Basic metadata
@@ -113,7 +146,25 @@ class HuggingFaceCollector:
             'popularity': row.get('popularity', 50),
             'duration_ms': row.get('duration_ms', 180000),
             'explicit': row.get('explicit', False),
+
+            # Lyrics fields (populated if lyrics fetching is enabled)
+            'lyrics': None,
+            'lyrics_preview': None,
         }
+
+        # Fetch lyrics if enabled
+        should_fetch = fetch_lyrics if fetch_lyrics is not None else self.fetch_lyrics
+        if should_fetch and self.lyrics_fetcher:
+            song_name = song['name']
+            artist_name = song['artist']
+            if song_name and artist_name:
+                lyrics_preview = self.lyrics_fetcher.get_lyrics_preview(
+                    song_name, artist_name, max_chars=500
+                )
+                if lyrics_preview:
+                    song['lyrics_preview'] = lyrics_preview
+                    # Full lyrics stored separately if needed
+                    song['lyrics'] = self.lyrics_fetcher.get_lyrics(song_name, artist_name)
 
         return song
 
@@ -126,7 +177,7 @@ class HuggingFaceCollector:
         Collect songs from Hugging Face dataset
 
         Returns:
-            List of song dictionaries with metadata and audio features
+            List of song dictionaries with metadata, audio features, and optionally lyrics
         """
         # Load dataset if not already loaded
         if self.df is None:
@@ -137,12 +188,23 @@ class HuggingFaceCollector:
 
         # Convert to song dictionaries
         songs = []
-        print("\nPreparing song data...")
-        for idx, row in tqdm(filtered_df.iterrows(), total=len(filtered_df)):
+        lyrics_found = 0
+
+        desc = "Preparing song data"
+        if self.fetch_lyrics:
+            desc += " (with lyrics)"
+
+        print(f"\n{desc}...")
+        for idx, row in tqdm(filtered_df.iterrows(), total=len(filtered_df), desc=desc):
             song = self.prepare_song_data(row)
             songs.append(song)
 
+            if song.get('lyrics_preview'):
+                lyrics_found += 1
+
         print(f"\n✓ Prepared {len(songs)} songs from Hugging Face dataset")
+        if self.fetch_lyrics:
+            print(f"✓ Found lyrics for {lyrics_found}/{len(songs)} songs ({lyrics_found/len(songs)*100:.1f}%)")
 
         return songs
 

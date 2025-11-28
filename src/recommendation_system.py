@@ -240,12 +240,11 @@ if __name__ == "__main__":
     print("Testing Music Recommendation System\n" + "="*80)
 
     system = MusicRecommendationSystem()
-    db = SQLiteManager()
 
     # Create or get test user
-    user = db.get_user(username="test_user")
+    user = system.db.get_user(username="test_user")
     if not user:
-        user_id = db.create_user("test_user")
+        user_id = system.db.create_user("test_user")
         print(f"Created test user with ID: {user_id}")
     else:
         user_id = user['id']

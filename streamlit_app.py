@@ -514,13 +514,14 @@ with tab5:
 
     ### Data
 
-    - 5000+ songs across 5 genres
+    - 7,400+ songs across 5 genres (pop, rock, hip-hop, electronic, R&B)
     - Rich metadata: audio features, lyrics, artist info
+    - ~62% songs with lyrics for enhanced semantic search
     - Real-time user feedback integration
 
     ---
 
-    Built for GSU Text Analytics Final Project
+    Built for GSU Text Analytics Final Project - Fall 2025
     """)
 
 # Run the app

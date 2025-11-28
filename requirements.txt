@@ -27,3 +27,6 @@ python-dotenv
 
 # Utilities
 tqdm
+
+# Lyrics
+lyricsgenius
