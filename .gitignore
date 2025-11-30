@@ -74,3 +74,12 @@ temp/
 # Distribution
 *.manifest
 *.spec
+
+# Evaluation output
+evaluation_results/
+
+# Reports (generated separately)
+Final_Report.*
+
+# Office temp files
+~$*

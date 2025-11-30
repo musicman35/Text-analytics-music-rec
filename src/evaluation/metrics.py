@@ -1,14 +1,15 @@
 """
 Evaluation Metrics for Music Recommendation System
-Includes: Precision@K, Diversity, Coverage, User Satisfaction
+Includes: Precision@K, Diversity, Coverage, User Satisfaction, Query Relevance
 """
 
 import numpy as np
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional
 from collections import Counter, defaultdict
 from sklearn.metrics import ndcg_score
 import config
 from src.database.qdrant_storage import QdrantStorage
+from src.utils.audio_features import extract_features_from_song
 
 
 class RecommendationMetrics:
@@ -186,6 +187,96 @@ class RecommendationMetrics:
             return float(ndcg)
         except:
             return 0.0
+
+    def calculate_query_relevance(self, recommendations: List[Dict],
+                                  target_features: Dict[str, float],
+                                  feature_weights: Optional[Dict[str, float]] = None) -> float:
+        """
+        Calculate how well recommendations match target audio features.
+
+        This metric measures whether recommendations align with the
+        expected characteristics for a given query type.
+
+        Args:
+            recommendations: List of recommended song dictionaries
+            target_features: Dict of target feature values (e.g., {'energy': 0.8, 'valence': 0.7})
+            feature_weights: Optional weights for each feature (defaults to equal weights)
+
+        Returns:
+            Query relevance score (0-1)
+        """
+        if not recommendations or not target_features:
+            return 0.0
+
+        if feature_weights is None:
+            feature_weights = {f: 1.0 for f in target_features.keys()}
+
+        song_scores = []
+
+        for song in recommendations:
+            features = extract_features_from_song(song)
+            feature_scores = []
+            weights = []
+
+            for feature_name, target_value in target_features.items():
+                if feature_name in features:
+                    song_value = features[feature_name]
+
+                    # Calculate similarity based on feature type
+                    if feature_name == 'tempo':
+                        # Tempo: larger range, use relative difference
+                        diff = abs(song_value - target_value) / max(target_value, 1)
+                        similarity = max(0, 1 - diff)
+                    else:
+                        # 0-1 scaled features: use absolute difference
+                        diff = abs(song_value - target_value)
+                        similarity = max(0, 1 - diff)
+
+                    feature_scores.append(similarity)
+                    weights.append(feature_weights.get(feature_name, 1.0))
+
+            if feature_scores:
+                song_score = np.average(feature_scores, weights=weights)
+                song_scores.append(song_score)
+
+        return float(np.mean(song_scores)) if song_scores else 0.0
+
+    def calculate_lyrics_relevance(self, recommendations: List[Dict],
+                                   themes: List[str]) -> float:
+        """
+        Calculate how well recommendation lyrics match expected themes.
+
+        Args:
+            recommendations: List of recommended song dictionaries
+            themes: List of theme keywords to look for
+
+        Returns:
+            Lyrics relevance score (0-1)
+        """
+        if not recommendations or not themes:
+            return 0.0
+
+        songs_with_lyrics = 0
+        theme_scores = []
+
+        for song in recommendations:
+            lyrics = (song.get('lyrics_preview') or '').lower()
+
+            if lyrics:
+                songs_with_lyrics += 1
+                # Count theme matches
+                matches = sum(1 for theme in themes if theme.lower() in lyrics)
+                # Score: proportion of themes found (with bonus for multiple matches)
+                score = min(1.0, matches / max(len(themes) * 0.3, 1))
+                theme_scores.append(score)
+
+        if not theme_scores:
+            return 0.0
+
+        # Factor in lyrics coverage
+        coverage_bonus = songs_with_lyrics / len(recommendations)
+
+        return float(np.mean(theme_scores) * (0.7 + 0.3 * coverage_bonus))
 
     def evaluate_recommendations(self, user_id: int, recommended: List[Dict],
                                 k_values: List[int] = None) -> Dict:

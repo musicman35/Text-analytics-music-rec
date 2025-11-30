@@ -145,10 +145,15 @@ EVALUATION_METRICS = [
     "precision_at_k",
     "diversity_score",
     "coverage",
-    "user_satisfaction"
+    "user_satisfaction",
+    "query_relevance"
 ]
 
 PRECISION_K_VALUES = [5, 10]
+
+# Evaluation Output Paths
+EVALUATION_OUTPUT_DIR = BASE_DIR / "evaluation_results"
+EVALUATION_FIGURES_DIR = EVALUATION_OUTPUT_DIR / "figures"
 
 # Flask Configuration
 FLASK_HOST = "0.0.0.0"
