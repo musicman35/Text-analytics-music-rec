@@ -117,13 +117,13 @@ class RecommendationMetrics:
         return float(coverage)
 
     def calculate_user_satisfaction(self, user_id: int,
-                                   recommended_songs: List[int]) -> float:
+                                   recommended_songs: List[str]) -> float:
         """
         Calculate user satisfaction based on ratings
 
         Args:
             user_id: User ID
-            recommended_songs: List of recommended song IDs
+            recommended_songs: List of recommended song IDs (spotify_id or song_id)
 
         Returns:
             Satisfaction score (0-1)
@@ -133,10 +133,17 @@ class RecommendationMetrics:
         if not interactions:
             return 0.5  # Neutral for no data
 
+        # Build lookup dict with both song_id and spotify_id as keys for matching
+        # This handles both old interactions (song_id only) and new ones (with spotify_id)
+        interaction_dict = {}
+        for i in interactions:
+            if i.get('song_id'):
+                interaction_dict[i['song_id']] = i
+            if i.get('spotify_id'):
+                interaction_dict[i['spotify_id']] = i
+
         # Get ratings for recommended songs
         ratings = []
-        interaction_dict = {i['song_id']: i for i in interactions}
-
         for song_id in recommended_songs:
             if song_id in interaction_dict:
                 rating = interaction_dict[song_id].get('rating')
@@ -291,10 +298,21 @@ class RecommendationMetrics:
 
         # Get user's liked songs
         interactions = self.db.get_user_interactions(user_id)
-        liked_songs = [i['song_id'] for i in interactions
-                      if i.get('rating') and i['rating'] >= 4]
 
-        recommended_ids = [song.get('song_id', song.get('spotify_id', '')) for song in recommended]
+        # Build set of liked song IDs using both spotify_id and song_id for compatibility
+        # This handles both old interactions (song_id only) and new ones (with spotify_id)
+        liked_songs = set()
+        for i in interactions:
+            if i.get('rating') and i['rating'] >= 4:
+                # Add both IDs if available for matching
+                if i.get('spotify_id'):
+                    liked_songs.add(i['spotify_id'])
+                if i.get('song_id'):
+                    liked_songs.add(i['song_id'])
+        liked_songs = list(liked_songs)
+
+        # Use spotify_id as primary identifier (stable across DB rebuilds), fall back to song_id
+        recommended_ids = [song.get('spotify_id', song.get('song_id', '')) for song in recommended]
 
         metrics = {
             'user_id': user_id,

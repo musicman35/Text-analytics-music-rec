@@ -426,8 +426,17 @@ class QdrantStorage:
 
     # ==================== INTERACTION OPERATIONS ====================
 
-    def add_interaction(self, user_id: str, song_id: str, interaction_type: str, rating: int = None):
-        """Add user-song interaction"""
+    def add_interaction(self, user_id: str, song_id: str, interaction_type: str,
+                        rating: int = None, spotify_id: str = None):
+        """Add user-song interaction
+
+        Args:
+            user_id: User identifier
+            song_id: Song identifier (internal UUID)
+            interaction_type: Type of interaction ('like', 'dislike', 'play', 'rate')
+            rating: Optional rating value (1-5)
+            spotify_id: Optional Spotify track ID for stable cross-session matching
+        """
         interaction_id = str(uuid.uuid4())
 
         payload = {
@@ -437,6 +446,10 @@ class QdrantStorage:
             'interaction_type': interaction_type,  # 'like', 'dislike', 'play', 'rate'
             'timestamp': str(uuid.uuid1().time)
         }
+
+        # Add spotify_id if provided (for stable ID matching across DB rebuilds)
+        if spotify_id:
+            payload['spotify_id'] = spotify_id
 
         # Add rating if provided
         if rating is not None:
@@ -527,7 +540,7 @@ class QdrantStorage:
         Get a single song by ID
 
         Args:
-            song_id: Song ID (same as spotify_id)
+            song_id: Song ID (internal UUID or spotify_id)
             spotify_id: Spotify track ID
 
         Returns:
@@ -539,7 +552,7 @@ class QdrantStorage:
             return None
 
         try:
-            # Retrieve song from Qdrant
+            # First try direct ID lookup (works if search_id is the point UUID)
             result = self.client.retrieve(
                 collection_name=self.songs_collection,
                 ids=[search_id]
@@ -548,10 +561,28 @@ class QdrantStorage:
             if result and len(result) > 0:
                 point = result[0]
                 song = point.payload.copy()
-
-                # Reconstruct features using shared utility
                 song['features'] = extract_features_from_song(song)
+                return song
 
+            # If direct lookup fails, try searching by spotify_id in payload
+            # This handles cases where song_id is a spotify_id or old UUID
+            scroll_result = self.client.scroll(
+                collection_name=self.songs_collection,
+                scroll_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="spotify_id",
+                            match=MatchValue(value=search_id)
+                        )
+                    ]
+                ),
+                limit=1
+            )
+
+            if scroll_result and scroll_result[0]:
+                point = scroll_result[0][0]
+                song = point.payload.copy()
+                song['features'] = extract_features_from_song(song)
                 return song
 
             return None

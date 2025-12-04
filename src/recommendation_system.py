@@ -194,7 +194,7 @@ class MusicRecommendationSystem:
 
     def record_feedback(self, user_id: int, song_id: int,
                        rating: int = None, action_type: str = 'view',
-                       session_id: str = None):
+                       session_id: str = None, spotify_id: str = None):
         """
         Record user feedback on a recommendation
 
@@ -204,14 +204,15 @@ class MusicRecommendationSystem:
             rating: Optional rating (1-5)
             action_type: Type of action (like, dislike, play, save, skip, view)
             session_id: Optional session ID
+            spotify_id: Optional Spotify track ID for stable cross-session matching
         """
         # Record interaction in database
-        self.db.add_interaction(user_id, song_id, action_type, rating)
+        self.db.add_interaction(user_id, song_id, action_type, rating, spotify_id=spotify_id)
 
         # Update short-term memory if session active
         if session_id:
             short_term = get_short_term_memory(user_id, session_id)
-            short_term.add_interaction(song_id, action_type, rating)
+            short_term.add_interaction(song_id, action_type, rating, spotify_id=spotify_id)
             short_term.save_to_database()
 
         # Update long-term memory periodically

@@ -101,15 +101,22 @@ class LongTermMemory:
         genre_scores = defaultdict(float)
 
         # Positive weight for liked songs
+        # Use spotify_id first (stable), then fall back to song_id
         for song in liked_songs:
-            song_data = self.db.get_song(song_id=song['song_id'])
+            song_data = self.db.get_song(
+                spotify_id=song.get('spotify_id'),
+                song_id=song.get('song_id')
+            )
             if song_data and song_data.get('genre'):
                 genre = song_data['genre']
                 genre_scores[genre] += 1.0
 
         # Negative weight for disliked songs
         for song in disliked_songs:
-            song_data = self.db.get_song(song_id=song['song_id'])
+            song_data = self.db.get_song(
+                spotify_id=song.get('spotify_id'),
+                song_id=song.get('song_id')
+            )
             if song_data and song_data.get('genre'):
                 genre = song_data['genre']
                 genre_scores[genre] -= 0.5
@@ -132,7 +139,11 @@ class LongTermMemory:
 
         for song in liked_songs:
             # Fetch full song data to get audio features
-            song_data = self.db.get_song(song_id=song['song_id'])
+            # Try spotify_id first (stable), then fall back to song_id
+            song_data = self.db.get_song(
+                spotify_id=song.get('spotify_id'),
+                song_id=song.get('song_id')
+            )
             if not song_data:
                 continue
 
@@ -162,13 +173,20 @@ class LongTermMemory:
         disliked_artists = []
 
         # Fetch full song data to get artist information
+        # Use spotify_id first (stable), then fall back to song_id
         for song in liked_songs:
-            song_data = self.db.get_song(song_id=song['song_id'])
+            song_data = self.db.get_song(
+                spotify_id=song.get('spotify_id'),
+                song_id=song.get('song_id')
+            )
             if song_data and song_data.get('artist'):
                 liked_artists.append(song_data['artist'])
 
         for song in disliked_songs:
-            song_data = self.db.get_song(song_id=song['song_id'])
+            song_data = self.db.get_song(
+                spotify_id=song.get('spotify_id'),
+                song_id=song.get('song_id')
+            )
             if song_data and song_data.get('artist'):
                 disliked_artists.append(song_data['artist'])
 
@@ -204,7 +222,11 @@ class LongTermMemory:
                     period = matcher.get_time_period(hour)
 
                     # Fetch full song data to get audio features
-                    song_data = self.db.get_song(song_id=song['song_id'])
+                    # Use spotify_id first (stable), then fall back to song_id
+                    song_data = self.db.get_song(
+                        spotify_id=song.get('spotify_id'),
+                        song_id=song.get('song_id')
+                    )
                     if not song_data:
                         continue
 

@@ -122,6 +122,7 @@ def record_feedback():
     rating = data.get('rating')
     action_type = data.get('action_type', 'view')
     session_id = data.get('session_id')
+    spotify_id = data.get('spotify_id')
 
     if not user_id or not song_id:
         return jsonify({'error': 'user_id and song_id are required'}), 400
@@ -132,7 +133,8 @@ def record_feedback():
             song_id=song_id,
             rating=rating,
             action_type=action_type,
-            session_id=session_id
+            session_id=session_id,
+            spotify_id=spotify_id
         )
 
         return jsonify({'success': True, 'message': 'Feedback recorded'})

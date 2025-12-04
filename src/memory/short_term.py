@@ -35,7 +35,8 @@ class ShortTermMemory:
         if len(self.current_queries) > 10:
             self.current_queries = self.current_queries[-10:]
 
-    def add_interaction(self, song_id: int, action_type: str, rating: int = None):
+    def add_interaction(self, song_id: str, action_type: str, rating: int = None,
+                        spotify_id: str = None):
         """Add interaction to short-term memory"""
         interaction = {
             'song_id': song_id,
@@ -43,6 +44,10 @@ class ShortTermMemory:
             'rating': rating,
             'timestamp': datetime.now().isoformat()
         }
+
+        # Store spotify_id for stable cross-session matching
+        if spotify_id:
+            interaction['spotify_id'] = spotify_id
 
         self.recent_interactions.append(interaction)
 
@@ -96,9 +101,9 @@ class ShortTermMemory:
             'interactions_count': len(self.recent_interactions),
             'recent_queries': self.get_recent_queries(3),
             'temporary_preferences': self.temporary_preferences,
-            'liked_songs': [i['song_id'] for i in self.recent_interactions
+            'liked_songs': [i.get('spotify_id') or i.get('song_id') for i in self.recent_interactions
                           if i.get('rating') and i['rating'] >= 4],
-            'disliked_songs': [i['song_id'] for i in self.recent_interactions
+            'disliked_songs': [i.get('spotify_id') or i.get('song_id') for i in self.recent_interactions
                              if i.get('rating') and i['rating'] <= 2]
         }
 

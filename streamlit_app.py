@@ -290,7 +290,8 @@ with tab1:
                             song_id=get_song_id(song),
                             rating=rating,
                             action_type='rate',
-                            session_id=st.session_state.session_id
+                            session_id=st.session_state.session_id,
+                            spotify_id=song.get('spotify_id')
                         )
                         st.session_state.rated_songs.add(song_key)
                         st.success("✓ Rated!")
@@ -304,7 +305,8 @@ with tab1:
                                 st.session_state.user_id,
                                 get_song_id(song),
                                 action_type='like',
-                                session_id=st.session_state.session_id
+                                session_id=st.session_state.session_id,
+                                spotify_id=song.get('spotify_id')
                             )
                             st.success("✓")
 
@@ -314,7 +316,8 @@ with tab1:
                                 st.session_state.user_id,
                                 get_song_id(song),
                                 action_type='dislike',
-                                session_id=st.session_state.session_id
+                                session_id=st.session_state.session_id,
+                                spotify_id=song.get('spotify_id')
                             )
                             st.info("✓")
 
